@@ -45,7 +45,8 @@
     }
     h1 { margin: 0; font-size: clamp(1.4rem, 2.4vw, 2rem); }
     .hint { margin: 4px 0 0; color: #d5e6ef; }
-    .views { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .views { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+    .lang { display: flex; gap: 4px; margin-right: 4px; }
     .views button, .again {
       border: 0;
       border-radius: 999px;
@@ -270,6 +271,10 @@
       <p class="hint" id="hint">點選其中一個方案</p>
     </div>
     <div class="views" id="views">
+      <div class="lang" id="lang">
+        <button type="button" data-lang="zh" aria-pressed="true">中</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
       <button type="button" id="tip" aria-pressed="false">示意</button>
       <button type="button" data-view="question" aria-pressed="true">建築體量</button>
       <button type="button" data-view="result" disabled>通風結果</button>
@@ -322,47 +327,98 @@
       "5b": [642, 100, 1154, 668]
     };
 
+    const copy = {
+      zh: {
+        title: "SBDG 邊個較通風",
+        prompt: "邊個建築體量較通風？",
+        hintAsk: "第 {n} / {total} 題 · 可先睇示意，再點選其中一個方案",
+        hintAnswered: "可切換睇通風結果同分析報告",
+        hintDone: "五題完成",
+        tip: "示意",
+        mass: "建築體量",
+        result: "通風結果",
+        report: "分析報告",
+        close: "關閉",
+        again: "再選一次",
+        next: "下一題",
+        finish: "完成",
+        replay: "再玩一次",
+        better: "較通風",
+        avg: "X 平均",
+        zones: "低 {low} · 中 {mid} · 高 {high}",
+        correct: "選中了。 ",
+        wrong: "未選中。 ",
+        score: "今次答對 {n} / {total}",
+        reasons: [
+          "兩座分開，中間有風可以穿過。X 平均 1a 為 50%，1b 為 46%。",
+          "2b 有兩個開口，風可以穿過。X 平均 2b 為 63%，2a 為 54%。",
+          "Y 形轉角多，風路成本高。X 平均 3b 為 52%，3a 為 37%。",
+          "低層相若，中層 4b 較開揚。X 平均 4b 為 45%，4a 為 43%。",
+          "兩者接近。X 平均都是 77%，低層 5a 為 72%、5b 為 71%。"
+        ]
+      },
+      en: {
+        title: "SBDG Which is better ventilated",
+        prompt: "Which building mass is better ventilated?",
+        hintAsk: "Question {n} / {total} · Open the diagram, then choose one",
+        hintAnswered: "Switch between the ventilation result and the report",
+        hintDone: "All five questions done",
+        tip: "Diagram",
+        mass: "Massing",
+        result: "Ventilation",
+        report: "Report",
+        close: "Close",
+        again: "Try again",
+        next: "Next",
+        finish: "Finish",
+        replay: "Play again",
+        better: "Better ventilated",
+        avg: "X average",
+        zones: "Low {low} · Mid {mid} · High {high}",
+        correct: "Correct. ",
+        wrong: "Not this one. ",
+        score: "You got {n} / {total} correct",
+        reasons: [
+          "The two towers are separated, so wind can pass between them. Average X: 1a 50%, 1b 46%.",
+          "2b has two openings, so wind can pass through. Average X: 2b 63%, 2a 54%.",
+          "The Y shape has more turns, so the wind path costs more. Average X: 3b 52%, 3a 37%.",
+          "The low zone is similar, and 4b is more open at mid-level. Average X: 4b 45%, 4a 43%.",
+          "Very close. Average X is 77% for both. Low zone: 5a 72%, 5b 71%."
+        ]
+      }
+    };
+
     const questions = [
       {
-        prompt: "邊個建築體量較通風？",
         correct: "a",
-        reason: "兩座分開，中間有風可以穿過。X 平均 1a 為 50%，1b 為 46%。",
         options: [
           option("1a", { low: 44, mid: 48, high: 58 }),
           option("1b", { low: 40, mid: 44, high: 55 })
         ]
       },
       {
-        prompt: "邊個建築體量較通風？",
         correct: "b",
-        reason: "2b 有兩個開口，風可以穿過。X 平均 2b 為 63%，2a 為 54%。",
         options: [
           option("2a", { low: 58, mid: 54, high: 51 }),
           option("2b", { low: 73, mid: 64, high: 51 })
         ]
       },
       {
-        prompt: "邊個建築體量較通風？",
         correct: "b",
-        reason: "Y 形轉角多，風路成本高。X 平均 3b 為 52%，3a 為 37%。",
         options: [
           option("3a", { low: 32, mid: 35, high: 45 }),
           option("3b", { low: 47, mid: 52, high: 58 })
         ]
       },
       {
-        prompt: "邊個建築體量較通風？",
         correct: "b",
-        reason: "低層相若，中層 4b 較開揚。X 平均 4b 為 45%，4a 為 43%。",
         options: [
           option("4a", { low: 35, mid: 40, high: 55 }),
           option("4b", { low: 35, mid: 46, high: 55 })
         ]
       },
       {
-        prompt: "邊個建築體量較通風？",
         correct: "a",
-        reason: "兩者接近。X 平均都是 77%，低層 5a 為 72%、5b 為 71%。",
         options: [
           option("5a", { low: 72, mid: 78, high: 82 }),
           option("5b", { low: 71, mid: 78, high: 82 })
@@ -381,7 +437,71 @@
     let view = "question";
     let locked = false;
     let correctCount = 0;
+    let phase = "ask";
+    let lastCorrect = false;
+    let lang = "zh";
     const scored = [];
+    try {
+      const saved = localStorage.getItem("sbdg-lang");
+      if (saved === "en" || saved === "zh") lang = saved;
+    } catch (error) {}
+
+    function text(key) {
+      return copy[lang][key];
+    }
+
+    function fill(template, data) {
+      return template.replace(/\{(\w+)\}/g, function (_, key) { return data[key]; });
+    }
+
+    function applyUi() {
+      const total = questions.length;
+      const onLast = questionIndex === total - 1;
+      document.documentElement.lang = lang === "en" ? "en" : "zh-Hant";
+      document.title = text("title");
+      title.textContent = text("prompt");
+      document.getElementById("tip").textContent = text("tip");
+      document.querySelector("[data-view=question]").textContent = text("mass");
+      document.querySelector("[data-view=result]").textContent = text("result");
+      document.querySelector("[data-view=report]").textContent = text("report");
+      document.getElementById("modal-title").textContent = text("tip");
+      document.getElementById("modal-close").textContent = text("close");
+      again.textContent = text("again");
+      document.querySelectorAll("#lang button").forEach(function (button) {
+        button.setAttribute("aria-pressed", button.dataset.lang === lang ? "true" : "false");
+      });
+      feedback.className = "feedback";
+      if (phase === "ask") {
+        feedback.textContent = "";
+        hint.textContent = fill(text("hintAsk"), { n: questionIndex + 1, total: total });
+      } else if (phase === "answered") {
+        feedback.textContent = (lastCorrect ? text("correct") : text("wrong")) + text("reasons")[questionIndex];
+        feedback.classList.add(lastCorrect ? "good" : "bad");
+        hint.textContent = text("hintAnswered");
+      } else {
+        feedback.textContent = fill(text("score"), { n: correctCount, total: total });
+        feedback.classList.add("good");
+        hint.textContent = text("hintDone");
+      }
+      next.textContent = phase === "done" ? text("replay") : (onLast ? text("finish") : text("next"));
+      board.querySelectorAll(".badge").forEach(function (badge) { badge.textContent = text("better"); });
+      board.querySelectorAll(".stat").forEach(function (stat) {
+        stat.querySelector(".stat-k").textContent = text("avg");
+        stat.querySelector(".stat-note").textContent = fill(text("zones"), {
+          low: stat.dataset.low,
+          mid: stat.dataset.mid,
+          high: stat.dataset.high
+        });
+      });
+      const kind = view === "question" ? text("mass") : view === "result" ? text("result") : text("report");
+      board.querySelectorAll("button.option").forEach(function (button) {
+        const img = button.querySelector("img");
+        if (img) img.alt = button.querySelector(".cap strong").textContent + " " + kind;
+      });
+      document.querySelectorAll(".tip-shot img").forEach(function (img) {
+        img.alt = img.alt.replace(/ .*/, "") + " " + text("tip");
+      });
+    }
 
     function imageUrl(fileName) {
       return "QuestionAndAnswer/" + encodeURIComponent(fileName);
@@ -390,16 +510,12 @@
     function render() {
       const item = questions[questionIndex];
       locked = false;
+      phase = "ask";
       view = "question";
       board.classList.remove("is-fit");
-      title.textContent = item.prompt;
-      hint.textContent = "第 " + (questionIndex + 1) + " / " + questions.length + " 題 · 可先睇示意，再點選其中一個方案";
       closeTip();
-      feedback.textContent = "";
-      feedback.className = "feedback";
       again.classList.remove("is-ready");
       next.classList.remove("is-ready");
-      next.textContent = questionIndex === questions.length - 1 ? "完成" : "下一題";
       viewButtons.forEach(function (button) {
         const name = button.dataset.view;
         button.disabled = name !== "question";
@@ -419,16 +535,19 @@
         const shot = document.createElement("div");
         shot.className = "shot";
         const img = document.createElement("img");
-        img.alt = option.label + " 建築體量";
+        img.alt = option.label;
         img.src = imageUrl(option.question);
         const stat = document.createElement("div");
         stat.className = "stat";
         stat.hidden = true;
         const score = option.score;
+        stat.dataset.low = score.low;
+        stat.dataset.mid = score.mid;
+        stat.dataset.high = score.high;
         const average = Math.round((score.low + score.mid + score.high) / 3);
         const statLabel = document.createElement("span");
         statLabel.className = "stat-k";
-        statLabel.textContent = "X 平均";
+        statLabel.textContent = text("avg");
         const statRow = document.createElement("span");
         statRow.className = "stat-row";
         const value = document.createElement("b");
@@ -436,7 +555,7 @@
         statRow.appendChild(value);
         const statNote = document.createElement("span");
         statNote.className = "stat-note";
-        statNote.textContent = "低 " + score.low + " · 中 " + score.mid + " · 高 " + score.high;
+        statNote.textContent = fill(text("zones"), score);
         stat.appendChild(statLabel);
         stat.appendChild(statRow);
         stat.appendChild(statNote);
@@ -450,6 +569,7 @@
         button.addEventListener("click", function () { pick(option.id); });
         board.appendChild(button);
       });
+      applyUi();
     }
 
     function showView(nextView) {
@@ -462,7 +582,7 @@
       board.querySelectorAll("button.option").forEach(function (button) {
         const option = item.options.find(function (entry) { return entry.id === button.dataset.id; });
         const img = button.querySelector("img");
-        const kind = view === "question" ? "建築體量" : view === "result" ? "通風結果" : "分析報告";
+        const kind = view === "question" ? text("mass") : view === "result" ? text("result") : text("report");
         img.alt = option.label + " " + kind;
         img.src = imageUrl(option[view]);
       });
@@ -471,8 +591,10 @@
     function pick(optionId) {
       if (locked) return;
       locked = true;
+      phase = "answered";
       const item = questions[questionIndex];
       const correct = optionId === item.correct;
+      lastCorrect = correct;
       if (!scored[questionIndex]) {
         if (correct) correctCount += 1;
         scored[questionIndex] = true;
@@ -483,20 +605,18 @@
           button.classList.add("good");
           const badge = document.createElement("span");
           badge.className = "badge";
-          badge.textContent = "較通風";
+          badge.textContent = text("better");
           button.querySelector(".cap").appendChild(badge);
         } else if (button.dataset.id === optionId) {
           button.classList.add("bad");
         }
       });
       board.querySelectorAll(".stat").forEach(function (stat) { stat.hidden = false; });
-      feedback.textContent = (correct ? "選中了。 " : "未選中。 ") + item.reason;
-      feedback.classList.add(correct ? "good" : "bad");
-      hint.textContent = "可切換睇通風結果同分析報告";
       viewButtons.forEach(function (button) { button.disabled = false; });
       again.classList.add("is-ready");
       next.classList.add("is-ready");
       showView("result");
+      applyUi();
     }
 
     function restart() {
@@ -530,7 +650,7 @@
         const cropH = box[3] - box[1];
         shot.style.aspectRatio = cropW + " / " + cropH;
         const img = document.createElement("img");
-        img.alt = option.label + " 示意";
+        img.alt = option.label + " " + text("tip");
         img.src = imageUrl(option.note);
         img.style.width = (1920 / cropW * 100) + "%";
         img.style.height = (1080 / cropH * 100) + "%";
@@ -562,18 +682,23 @@
         showView(button.dataset.view);
       });
     });
+    document.querySelectorAll("#lang button").forEach(function (button) {
+      button.addEventListener("click", function () {
+        lang = button.dataset.lang;
+        try { localStorage.setItem("sbdg-lang", lang); } catch (error) {}
+        applyUi();
+      });
+    });
     again.addEventListener("click", render);
     next.addEventListener("click", function () {
-      if (next.textContent === "再玩一次") {
+      if (phase === "done") {
         restart();
         return;
       }
       if (questionIndex >= questions.length - 1) {
-        feedback.textContent = "今次答對 " + correctCount + " / " + questions.length;
-        feedback.className = "feedback good";
-        hint.textContent = "五題完成";
-        next.textContent = "再玩一次";
+        phase = "done";
         again.classList.remove("is-ready");
+        applyUi();
         return;
       }
       questionIndex += 1;
