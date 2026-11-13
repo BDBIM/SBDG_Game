@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SBDG 邊個較通風</title>
+  <style>
+    :root {
+      --bg: #102838;
+      --card: #ffffff;
+      --ink: #163044;
+      --muted: #5d7384;
+      --line: #d5e2ea;
+      --brand: #0e7c66;
+      --good: #0e7c66;
+      --bad: #c24141;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      height: 100dvh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) 76px;
+      overflow: hidden;
+      padding: 16px 16px calc(12px + env(safe-area-inset-bottom));
+      font-family: "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      color: white;
+      background:
+        radial-gradient(circle at top left, #1f6f8b 0, transparent 32%),
+        linear-gradient(160deg, #0d2436 0%, var(--bg) 58%, #0b3b34 100%);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: min(1280px, 100%);
+      margin: 0 auto 12px;
+    }
+    .kicker {
+      margin: 0 0 4px;
+      color: #8ee0cf;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+    h1 { margin: 0; font-size: clamp(1.4rem, 2.4vw, 2rem); }
+    .hint { margin: 4px 0 0; color: #d5e6ef; }
+    .views { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .views button, .again {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.14);
+      color: white;
+    }
+    .views button[aria-pressed="true"] { background: white; color: var(--ink); }
+    .views button:disabled { opacity: 0.45; cursor: default; }
+    #tip { background: #e7f6f2; color: var(--ink); }
+    #tip[aria-pressed="true"] { background: white; }
+    .board {
+      min-height: 0;
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: minmax(0, 1fr);
+      gap: 14px;
+    }
+    .option {
+      position: relative;
+      display: block;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      padding: 0;
+      border: 3px solid transparent;
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--card);
+      color: var(--ink);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+    }
+    .option:disabled { cursor: default; }
+    .option.good { border-color: var(--good); }
+    .option.bad { border-color: var(--bad); }
+    .cap {
+      position: absolute;
+      z-index: 2;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+    }
+    .cap strong { font-size: 1.2rem; }
+    .badge {
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: #e7f6f2;
+      color: var(--good);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+    .shot {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #d7dee4;
+    }
+    .shot img {
+      position: absolute;
+      left: 48%;
+      top: 50%;
+      width: 138%;
+      height: 138%;
+      max-width: none;
+      object-fit: cover;
+      object-position: 48% 50%;
+      transform: translate(-48%, -50%);
+    }
+    .is-fit .shot img {
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      transform: none;
+      object-fit: contain;
+      object-position: center;
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(8, 18, 28, 0.72);
+    }
+    .modal[hidden] { display: none; }
+    .modal-card {
+      width: min(1080px, 100%);
+      max-height: calc(100dvh - 48px);
+      overflow: auto;
+      padding: 18px 18px 20px;
+      border-radius: 22px;
+      background: white;
+      color: var(--ink);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .modal-head h2 { margin: 0; font-size: 1.35rem; }
+    .modal-head button {
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--brand);
+      color: white;
+    }
+    .modal-board {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .tip-fig { margin: 0; }
+    .tip-fig strong { display: block; margin: 0 0 8px; font-size: 1.15rem; }
+    .tip-shot {
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      background: white;
+      border: 1px solid var(--line);
+    }
+    .tip-shot img {
+      position: absolute;
+      max-width: none;
+    }
+    .stat {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 1;
+      min-width: 168px;
+      padding: 8px 14px 10px;
+      border-radius: 16px;
+      background: rgba(16, 32, 46, 0.88);
+      color: white;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    }
+    .stat-k, .stat-note { display: block; font-weight: 700; }
+    .stat-k { font-size: 0.82rem; letter-spacing: 0.04em; opacity: 0.85; }
+    .stat-row { display: block; margin: 0; }
+    .stat-row b { font-size: 3.4rem; line-height: 1; letter-spacing: -0.03em; }
+    .stat-note { margin-top: 4px; font-size: 0.82rem; opacity: 0.85; }
+    .option.good .stat {
+      background: var(--good);
+    }
+    .option.good .stat-row b { font-size: 3.8rem; }
+    .is-fit .stat { display: none; }
+    .foot {
+      width: min(1280px, 100%);
+      height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .feedback {
+      margin: 0;
+      font-weight: 700;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .feedback.good { color: #b7f3e4; }
+    .feedback.bad { color: #ffd0d0; }
+    .again { background: var(--brand); visibility: hidden; flex: none; }
+    .again.is-ready { visibility: visible; }
+    @media (max-width: 800px) {
+      header, .foot { align-items: stretch; flex-direction: column; }
+      body { height: auto; min-height: 100dvh; overflow: auto; grid-template-rows: auto auto auto; }
+      .board, .modal-board { grid-template-columns: 1fr; }
+      .option { height: 52dvh; }
+      .foot { height: auto; min-height: 76px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <p class="kicker">SBDG</p>
+      <h1 id="title">邊個建築體量較通風？</h1>
+      <p class="hint" id="hint">點選其中一個方案</p>
+    </div>
+    <div class="views" id="views">
+      <button type="button" id="tip" aria-pressed="false">示意</button>
+      <button type="button" data-view="question" aria-pressed="true">建築體量</button>
+      <button type="button" data-view="result" disabled>通風結果</button>
+      <button type="button" data-view="report" disabled>分析報告</button>
+    </div>
+  </header>
+  <div class="board" id="board"></div>
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h2 id="modal-title">示意</h2>
+        <button type="button" id="modal-close">關閉</button>
+      </div>
+      <div class="modal-board" id="modal-board"></div>
+    </div>
+  </div>
+  <div class="foot">
+    <p class="feedback" id="feedback"></p>
+    <button class="again" id="again" type="button">再選一次</button>
+    <button class="again" id="next" type="button">下一題</button>
+  </div>
+  <script>
+    // 每題兩張方案。correct 是較通風的方案 id。
+    // 圖檔放在 QuestionAndAnswer：Q2a QUE / ANS / REP。
+    function option(id, score) {
+      const n = id[0];
+      const side = id[1];
+      return {
+        id: side,
+        label: id,
+        question: "Q" + n + side + " QUE.PNG",
+        note: "Q" + n + side + " NTE.PNG",
+        result: "Q" + n + side + " ANS.PNG",
+        report: "Q" + n + side + " REP.PNG",
+        score: score
+      };
+    }
+
+    // 示意圖裁掉 Revit 視窗邊，只留體量同尺寸線。數字是原圖 1920×1080 的像素範圍。
+    const tipCrop = {
+      "1a": [586, 336, 1316, 636],
+      "1b": [620, 326, 1282, 640],
+      "2a": [620, 270, 1282, 816],
+      "2b": [620, 270, 1282, 816],
+      "3a": [456, 180, 1350, 1022],
+      "3b": [448, 122, 1252, 1048],
+      "4a": [574, 244, 1338, 974],
+      "4b": [358, 236, 1166, 962],
+      "5a": [648, 114, 1150, 678],
+      "5b": [642, 100, 1154, 668]
+    };
+
+    const questions = [
+      {
+        prompt: "邊個建築體量較通風？",
+        correct: "a",
+        reason: "兩座分開，中間有風可以穿過。X 平均 1a 為 50%，1b 為 46%。",
+        options: [
+          option("1a", { low: 44, mid: 48, high: 58 }),
+          option("1b", { low: 40, mid: 44, high: 55 })
+        ]
+      },
+      {
+        prompt: "邊個建築體量較通風？",
+        correct: "b",
+        reason: "2b 有兩個開口，風可以穿過。X 平均 2b 為 63%，2a 為 54%。",
+        options: [
+          option("2a", { low: 58, mid: 54, high: 51 }),
+          option("2b", { low: 73, mid: 64, high: 51 })
+        ]
+      },
+      {
+        prompt: "邊個建築體量較通風？",
+        correct: "b",
+        reason: "Y 形轉角多，風路成本高。X 平均 3b 為 52%，3a 為 37%。",
+        options: [
+          option("3a", { low: 32, mid: 35, high: 45 }),
+          option("3b", { low: 47, mid: 52, high: 58 })
+        ]
+      },
+      {
+        prompt: "邊個建築體量較通風？",
+        correct: "b",
+        reason: "低層相若，中層 4b 較開揚。X 平均 4b 為 45%，4a 為 43%。",
+        options: [
+          option("4a", { low: 35, mid: 40, high: 55 }),
+          option("4b", { low: 35, mid: 46, high: 55 })
+        ]
+      },
+      {
+        prompt: "邊個建築體量較通風？",
+        correct: "a",
+        reason: "兩者接近。X 平均都是 77%，低層 5a 為 72%、5b 為 71%。",
+        options: [
+          option("5a", { low: 72, mid: 78, high: 82 }),
+          option("5b", { low: 71, mid: 78, high: 82 })
+        ]
+      }
+    ];
+
+    const board = document.getElementById("board");
+    const title = document.getElementById("title");
+    const hint = document.getElementById("hint");
+    const feedback = document.getElementById("feedback");
+    const again = document.getElementById("again");
+    const next = document.getElementById("next");
+    const viewButtons = document.querySelectorAll("#views button[data-view]");
+    let questionIndex = 0;
+    let view = "question";
+    let locked = false;
+    let correctCount = 0;
+    const scored = [];
+
+    function imageUrl(fileName) {
+      return "QuestionAndAnswer/" + encodeURIComponent(fileName);
+    }
+
+    function render() {
+      const item = questions[questionIndex];
+      locked = false;
+      view = "question";
+      board.classList.remove("is-fit");
+      title.textContent = item.prompt;
+      hint.textContent = "第 " + (questionIndex + 1) + " / " + questions.length + " 題 · 可先睇示意，再點選其中一個方案";
+      closeTip();
+      feedback.textContent = "";
+      feedback.className = "feedback";
+      again.classList.remove("is-ready");
+      next.classList.remove("is-ready");
+      next.textContent = questionIndex === questions.length - 1 ? "完成" : "下一題";
+      viewButtons.forEach(function (button) {
+        const name = button.dataset.view;
+        button.disabled = name !== "question";
+        button.setAttribute("aria-pressed", name === view ? "true" : "false");
+      });
+      board.innerHTML = "";
+      item.options.forEach(function (option) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "option";
+        button.dataset.id = option.id;
+        const cap = document.createElement("div");
+        cap.className = "cap";
+        const label = document.createElement("strong");
+        label.textContent = option.label;
+        cap.appendChild(label);
+        const shot = document.createElement("div");
+        shot.className = "shot";
+        const img = document.createElement("img");
+        img.alt = option.label + " 建築體量";
+        img.src = imageUrl(option.question);
+        const stat = document.createElement("div");
+        stat.className = "stat";
+        stat.hidden = true;
+        const score = option.score;
+        const average = Math.round((score.low + score.mid + score.high) / 3);
+        const statLabel = document.createElement("span");
+        statLabel.className = "stat-k";
+        statLabel.textContent = "X 平均";
+        const statRow = document.createElement("span");
+        statRow.className = "stat-row";
+        const value = document.createElement("b");
+        value.textContent = average + "%";
+        statRow.appendChild(value);
+        const statNote = document.createElement("span");
+        statNote.className = "stat-note";
+        statNote.textContent = "低 " + score.low + " · 中 " + score.mid + " · 高 " + score.high;
+        stat.appendChild(statLabel);
+        stat.appendChild(statRow);
+        stat.appendChild(statNote);
+        shot.appendChild(img);
+        shot.appendChild(stat);
+        button.appendChild(cap);
+        button.appendChild(shot);
+        button.addEventListener("click", function () { pick(option.id); });
+        board.appendChild(button);
+      });
+    }
+
+    function showView(nextView) {
+      const item = questions[questionIndex];
+      view = nextView;
+      board.classList.toggle("is-fit", view === "report");
+      viewButtons.forEach(function (button) {
+        button.setAttribute("aria-pressed", button.dataset.view === view ? "true" : "false");
+      });
+      board.querySelectorAll("button.option").forEach(function (button) {
+        const option = item.options.find(function (entry) { return entry.id === button.dataset.id; });
+        const img = button.querySelector("img");
+        const kind = view === "question" ? "建築體量" : view === "result" ? "通風結果" : "分析報告";
+        img.alt = option.label + " " + kind;
+        img.src = imageUrl(option[view]);
+      });
+    }
+
+    function pick(optionId) {
+      if (locked) return;
+      locked = true;
+      const item = questions[questionIndex];
+      const correct = optionId === item.correct;
+      if (!scored[questionIndex]) {
+        if (correct) correctCount += 1;
+        scored[questionIndex] = true;
+      }
+      board.querySelectorAll("button.option").forEach(function (button) {
+        button.disabled = true;
+        if (button.dataset.id === item.correct) {
+          button.classList.add("good");
+          const badge = document.createElement("span");
+          badge.className = "badge";
+          badge.textContent = "較通風";
+          button.querySelector(".cap").appendChild(badge);
+        } else if (button.dataset.id === optionId) {
+          button.classList.add("bad");
+        }
+      });
+      board.querySelectorAll(".stat").forEach(function (stat) { stat.hidden = false; });
+      feedback.textContent = (correct ? "選中了。 " : "未選中。 ") + item.reason;
+      feedback.classList.add(correct ? "good" : "bad");
+      hint.textContent = "可切換睇通風結果同分析報告";
+      viewButtons.forEach(function (button) { button.disabled = false; });
+      again.classList.add("is-ready");
+      next.classList.add("is-ready");
+      showView("result");
+    }
+
+    function restart() {
+      questionIndex = 0;
+      correctCount = 0;
+      scored.length = 0;
+      render();
+    }
+
+    const tip = document.getElementById("tip");
+    const modal = document.getElementById("modal");
+    const modalBoard = document.getElementById("modal-board");
+
+    function closeTip() {
+      modal.hidden = true;
+      tip.setAttribute("aria-pressed", "false");
+    }
+
+    function openTip() {
+      const item = questions[questionIndex];
+      modalBoard.innerHTML = "";
+      item.options.forEach(function (option) {
+        const fig = document.createElement("figure");
+        fig.className = "tip-fig";
+        const cap = document.createElement("strong");
+        cap.textContent = option.label;
+        const shot = document.createElement("div");
+        shot.className = "tip-shot";
+        const box = tipCrop[option.label];
+        const cropW = box[2] - box[0];
+        const cropH = box[3] - box[1];
+        shot.style.aspectRatio = cropW + " / " + cropH;
+        const img = document.createElement("img");
+        img.alt = option.label + " 示意";
+        img.src = imageUrl(option.note);
+        img.style.width = (1920 / cropW * 100) + "%";
+        img.style.height = (1080 / cropH * 100) + "%";
+        img.style.left = (-box[0] / cropW * 100) + "%";
+        img.style.top = (-box[1] / cropH * 100) + "%";
+        shot.appendChild(img);
+        fig.appendChild(cap);
+        fig.appendChild(shot);
+        modalBoard.appendChild(fig);
+      });
+      modal.hidden = false;
+      tip.setAttribute("aria-pressed", "true");
+    }
+
+    tip.addEventListener("click", function () {
+      if (modal.hidden) openTip();
+      else closeTip();
+    });
+    modal.addEventListener("click", function (event) {
+      if (event.target === modal) closeTip();
+    });
+    document.getElementById("modal-close").addEventListener("click", closeTip);
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeTip();
+    });
+    viewButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        if (button.disabled) return;
+        showView(button.dataset.view);
+      });
+    });
+    again.addEventListener("click", render);
+    next.addEventListener("click", function () {
+      if (next.textContent === "再玩一次") {
+        restart();
+        return;
+      }
+      if (questionIndex >= questions.length - 1) {
+        feedback.textContent = "今次答對 " + correctCount + " / " + questions.length;
+        feedback.className = "feedback good";
+        hint.textContent = "五題完成";
+        next.textContent = "再玩一次";
+        again.classList.remove("is-ready");
+        return;
+      }
+      questionIndex += 1;
+      render();
+    });
+    render();
+  </script>
+</body>
+</html>
