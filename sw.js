@@ -1,4 +1,4 @@
-const CACHE = "sbdg-offline-v3";
+const CACHE = "sbdg-offline-v4";
 
 const names = [];
 for (let n = 1; n <= 5; n += 1) {
@@ -15,7 +15,6 @@ function asset(path) {
 }
 
 const urls = [
-  asset("./"),
   asset("index.html"),
   asset("manifest.webmanifest"),
   asset("icon-180.png"),
@@ -48,23 +47,34 @@ self.addEventListener("activate", function (event) {
   );
 });
 
+function store(request, response) {
+  if (!response || !response.ok || response.redirected) return response;
+  const copy = response.clone();
+  caches.open(CACHE).then(function (cache) {
+    return cache.put(request, copy);
+  }).catch(function () {});
+  return response;
+}
+
 self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
-  event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then(function (cached) {
-      const update = fetch(event.request).then(function (response) {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE).then(function (cache) {
-            cache.put(event.request, copy);
-          });
-        }
-        return response;
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).then(function (response) {
+        return store(asset("index.html"), response);
       }).catch(function () {
-        if (cached) return cached;
-        if (event.request.mode === "navigate") return caches.match(asset("index.html"));
+        return caches.match(asset("index.html"));
+      })
+    );
+    return;
+  }
+  event.respondWith(
+    caches.match(event.request).then(function (cached) {
+      const update = fetch(event.request).then(function (response) {
+        return store(event.request, response);
+      }).catch(function () {
         return cached;
       });
       return cached || update;

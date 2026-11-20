@@ -395,6 +395,7 @@
     let overlayReady = false;
     let overlayTimer = 0;
     const scored = [];
+    let lang = "zh";
     try {
       const saved = localStorage.getItem("sbdg-lang");
       if (saved === "en" || saved === "zh") lang = saved;
