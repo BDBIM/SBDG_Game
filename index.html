@@ -147,7 +147,7 @@
       inset: 0;
       overflow: hidden;
     }
-    .shot img {
+    .shot img, .overlay {
       position: absolute;
       left: 48%;
       top: 50%;
@@ -158,7 +158,14 @@
       object-position: 48% 50%;
       transform: translate(-48%, -50%);
     }
-    .is-fit .cap { display: none; }
+    .overlay {
+      z-index: 1;
+      display: none;
+      pointer-events: none;
+      filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
+    }
+    .board.show-overlay:not(.is-fit) .overlay { display: block; }
+    .is-fit .overlay { display: none; }
     .is-fit .shot { container-type: size; background: #fff; }
     .is-fit .frame {
       inset: auto;
@@ -300,6 +307,7 @@
         <button type="button" data-lang="en" aria-pressed="false">EN</button>
       </div>
       <button type="button" id="tip" aria-pressed="false">示意</button>
+      <button type="button" id="overlay" aria-pressed="false">尺寸</button>
       <button type="button" data-view="question" aria-pressed="true">建築體量</button>
       <button type="button" data-view="result" disabled>通風結果</button>
       <button type="button" data-view="report" disabled>分析報告</button>
@@ -330,6 +338,7 @@
         id: side,
         label: id,
         question: "Q" + n + side + " QUE.PNG",
+        overlay: "Q" + n + side + (n === "3" ? " QUE_image3.png" : " QUE_image.png"),
         note: "Q" + n + side + " NTE.PNG",
         result: "Q" + n + side + " ANS.PNG",
         report: "Q" + n + side + " REP.PNG",
@@ -359,6 +368,7 @@
         hintAnswered: "可切換睇通風結果同分析報告",
         hintDone: "五題完成",
         tip: "示意",
+        overlay: "尺寸",
         mass: "建築體量",
         result: "通風結果",
         report: "分析報告",
@@ -388,6 +398,7 @@
         hintAnswered: "Switch between the ventilation result and the report",
         hintDone: "All five questions done",
         tip: "Diagram",
+        overlay: "Dimensions",
         mass: "Massing",
         result: "Ventilation",
         report: "Report",
@@ -463,7 +474,7 @@
     let correctCount = 0;
     let phase = "ask";
     let lastCorrect = false;
-    let lang = "zh";
+    let overlayOn = false;
     const scored = [];
     try {
       const saved = localStorage.getItem("sbdg-lang");
@@ -485,6 +496,10 @@
       document.title = text("title");
       title.textContent = text("prompt");
       document.getElementById("tip").textContent = text("tip");
+      const overlayButton = document.getElementById("overlay");
+      overlayButton.textContent = text("overlay");
+      overlayButton.setAttribute("aria-pressed", overlayOn ? "true" : "false");
+      board.classList.toggle("show-overlay", overlayOn && view === "question");
       document.querySelector("[data-view=question]").textContent = text("mass");
       document.querySelector("[data-view=result]").textContent = text("result");
       document.querySelector("[data-view=report]").textContent = text("report");
@@ -519,7 +534,7 @@
       });
       const kind = view === "question" ? text("mass") : view === "result" ? text("result") : text("report");
       board.querySelectorAll("button.option").forEach(function (button) {
-        const img = button.querySelector("img");
+        const img = button.querySelector("img:not(.overlay)");
         if (img) img.alt = button.querySelector(".cap strong").textContent + " " + kind;
       });
       document.querySelectorAll(".tip-shot img").forEach(function (img) {
@@ -586,6 +601,11 @@
         const frame = document.createElement("div");
         frame.className = "frame";
         frame.appendChild(img);
+        const overlay = document.createElement("img");
+        overlay.className = "overlay";
+        overlay.alt = "";
+        overlay.src = imageUrl(option.overlay);
+        frame.appendChild(overlay);
         frame.appendChild(stat);
         shot.appendChild(frame);
         const mark = document.createElement("div");
@@ -609,11 +629,12 @@
       });
       board.querySelectorAll("button.option").forEach(function (button) {
         const option = item.options.find(function (entry) { return entry.id === button.dataset.id; });
-        const img = button.querySelector("img");
+        const img = button.querySelector("img:not(.overlay)");
         const kind = view === "question" ? text("mass") : view === "result" ? text("result") : text("report");
         img.alt = option.label + " " + kind;
         img.src = imageUrl(option[view]);
       });
+      board.classList.toggle("show-overlay", overlayOn && view === "question");
     }
 
     function pick(optionId) {
@@ -713,6 +734,10 @@
         if (button.disabled) return;
         showView(button.dataset.view);
       });
+    });
+    document.getElementById("overlay").addEventListener("click", function () {
+      overlayOn = !overlayOn;
+      applyUi();
     });
     document.querySelectorAll("#lang button").forEach(function (button) {
       button.addEventListener("click", function () {

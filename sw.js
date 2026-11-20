@@ -1,4 +1,4 @@
-const CACHE = "sbdg-offline-v1";
+const CACHE = "sbdg-offline-v2";
 
 const names = [];
 for (let n = 1; n <= 5; n += 1) {
@@ -6,6 +6,7 @@ for (let n = 1; n <= 5; n += 1) {
     ["QUE", "NTE", "ANS", "REP"].forEach(function (kind) {
       names.push("Q" + n + side + " " + kind + ".PNG");
     });
+    names.push("Q" + n + side + " QUE_image" + (n === 3 ? "3" : "") + ".png");
   });
 }
 
